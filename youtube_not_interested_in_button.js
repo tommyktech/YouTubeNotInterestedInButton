@@ -9,7 +9,8 @@
   'use strict';
 
   const TILE_SELECTOR = 'ytd-rich-item-renderer';
-  const MENU_BUTTON_SELECTOR = 'button-view-model.ytSpecButtonViewModelHost';
+  // const MENU_BUTTON_SELECTOR = 'button-view-model.ytSpecButtonViewModelHost';
+  const MENU_BUTTON_SELECTOR = 'div.yt-spec-touch-feedback-shape__fill';
   const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
   function attachButton(tile, idx) {

@@ -58,7 +58,19 @@
                     const menuButton = thumbnail.querySelector('yt-lockup-metadata-view-model:nth-child(1) > div:nth-child(3) > button-view-model:nth-child(1) > button:nth-child(1)');
                     console.log("fuck menuButton:", menuButton)
                     if (menuButton) {
-                        menuButton.click();
+                        // menuButton.click();
+                        // menuButton が既に取得済みの場合
+                        function synthesizeTouchClick(el) {
+                            if (!el) return;
+                            // pointer/touch の代わりに PointerEvent を使う（モバイルなら有効なことが多い）
+                            el.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, composed: true }));
+                            el.dispatchEvent(new PointerEvent('pointerup',   { bubbles: true, cancelable: true, composed: true }));
+                            el.dispatchEvent(new MouseEvent('click',         { bubbles: true, cancelable: true, composed: true }));
+                        }
+                        synthesizeTouchClick(menuButton);
+
+
+
                         setTimeout(() => {
 
                             const contextButtons = document.querySelectorAll('ytd-popup-container yt-list-item-view-model.yt-list-item-view-model');

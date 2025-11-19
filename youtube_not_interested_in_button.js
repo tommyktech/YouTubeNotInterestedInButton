@@ -65,6 +65,6 @@
     setTimeout(() => {
         scanTiles();
         new MutationObserver(scanTiles).observe(document.body, { childList: true, subtree: true });
-    }, 400);
+    }, 5000);
 
 })();

@@ -22,7 +22,7 @@
                 button.style.position = 'absolute';
                 button.style.bottom = '-5px';
                 button.style.right = '8px';
-                button.style.zIndex = '10';
+                button.style.zIndex = '10000';
                 button.style.color = 'white';
                 button.style.backgroundColor = 'transparent';
                 button.style.border = 'none';

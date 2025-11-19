@@ -54,18 +54,29 @@
                     event.preventDefault();
 
                     // Simulate "Not Interested" action
+                    //const menuButton = thumbnail.querySelector('yt-lockup-metadata-view-model:nth-child(1) > div:nth-child(3) > button-view-model:nth-child(1) > button:nth-child(1)');
                     const menuButton = thumbnail.querySelector('yt-lockup-metadata-view-model:nth-child(1) > div:nth-child(3) > button-view-model:nth-child(1) > button:nth-child(1)');
                     console.log("fuck menuButton:", menuButton)
                     if (menuButton) {
                         menuButton.click();
                         setTimeout(() => {
-                            const notInterestedButton = document.querySelector('yt-list-item-view-model.yt-list-item-view-model:nth-child(6) > div:nth-child(1)');
-                            console.log("fuck notInterestedButton:", notInterestedButton)
 
-                            if (notInterestedButton) {
-                                notInterestedButton.click();
+                            const contextButtons = document.querySelectorAll('ytd-popup-container yt-list-item-view-model.yt-list-item-view-model');
+                            console.log(contextButtons.length)
+                            for (const b of contextButtons) {
+                                if (b.textContent && b.textContent.includes("興味なし")) {
+                                    b.click()
+                                    console.log("興味なし を押した")
+                                }
                             }
-                        }, 200);
+
+//                            const notInterestedButton = document.querySelector('yt-list-item-view-model.yt-list-item-view-model:nth-child(6) > div:nth-child(1)');
+//                            console.log("fuck notInterestedButton:", notInterestedButton)
+
+//                            if (notInterestedButton) {
+//                                notInterestedButton.click();
+//                            }
+                        }, 2000);
                     }
                 });
 

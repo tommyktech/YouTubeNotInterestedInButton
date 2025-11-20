@@ -65,6 +65,7 @@ GM_addStyle(`
       target.dispatchEvent(new PointerEvent('pointerup',   opts));
     } catch (e) {
       // PointerEvent 非対応環境では無視（後続の click に頼る）
+      console.log("failed to dispatch pointerdown or pointerup")
     }
 
     target.dispatchEvent(new MouseEvent('click', {

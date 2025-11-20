@@ -80,8 +80,12 @@ GM_addStyle(`
   // === ここまで追加部分 ====================================================
 
   function attachButton(tile, idx) {
-    if (!tile || tile.hasAttribute(PROCESSED_ATTR)) {
-        console.log("stop attaching button")
+    if (!tile) {
+        console.log("tile is null:", tile)
+        return;
+    }
+    if (tile.hasAttribute(PROCESSED_ATTR)) {
+        console.log("button already attached")
         return;
     }
     tile.setAttribute(PROCESSED_ATTR, '1');
@@ -90,7 +94,7 @@ GM_addStyle(`
     btn.textContent = '🗑️';
     btn.style.position = 'absolute';
     btn.style.right = '0px';
-    btn.style.bottom = '0px';
+    btn.style.top = '40px';
     btn.style.zIndex = 2000;
     btn.style.fontSize = '24px';
     btn.style.padding = '24px 24px 64px 24px';
@@ -101,13 +105,15 @@ GM_addStyle(`
     btn.style.width = '64px';
 
     tile.style.position = 'relative';
+      /*
     const thumb = tile.querySelector(THUMBNAIL_VIEW);
     if (!thumb) {
       console.log('thumbnail not found');
       return;
     }
-    thumb.appendChild(btn);
-    console.log("append btn to thumb")
+    */
+    tile.appendChild(btn);
+    console.log("appended btn to tile")
 
     // === ここからリスナーを変更 ============================================
     // click ではなく pointerup / touchend で処理する
@@ -126,10 +132,12 @@ GM_addStyle(`
 
       setTimeout(() => {
         const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
+        console.log("notInterestedButton:", notInterestedButton)
         if (notInterestedButton) {
-          notInterestedButton.click();
+            synthesizePointerTapAt(notInterestedButton)
+          //notInterestedButton.click();
         }
-      }, 100);
+      }, 300);
     }
 
     // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る

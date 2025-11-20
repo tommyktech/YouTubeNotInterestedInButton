@@ -88,6 +88,7 @@ GM_addStyle(`
         console.log("button already attached")
         return;
     }
+    console.log("###############################################################################################")
     tile.setAttribute(PROCESSED_ATTR, '1');
 
     const btn = document.createElement('button');
@@ -131,22 +132,13 @@ GM_addStyle(`
       synthesizePointerTapAt(menuBtn, "menu");
 
       setTimeout(() => {
-          synthesizePointerTapAt(menuBtn, "menu");
-
-          setTimeout(() => {
-              synthesizePointerTapAt(menuBtn, "menu");
-
-              setTimeout(() => {
-                  const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
-                  console.log("notInterestedButton:", notInterestedButton)
-                  if (notInterestedButton) {
-                      synthesizePointerTapAt(notInterestedButton, "not interested")
-                      //notInterestedButton.click();
-                  }
-              }, 300);
-          }, 1000);
-      }, 1000);
-
+        const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
+        console.log("notInterestedButton:", notInterestedButton)
+        if (notInterestedButton) {
+            synthesizePointerTapAt(notInterestedButton, "not interested")
+          //notInterestedButton.click();
+        }
+      }, 300);
     }
 
     // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る

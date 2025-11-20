@@ -134,13 +134,17 @@ GM_addStyle(`
           synthesizePointerTapAt(menuBtn, "menu");
 
           setTimeout(() => {
-              const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
-              console.log("notInterestedButton:", notInterestedButton)
-              if (notInterestedButton) {
-                  synthesizePointerTapAt(notInterestedButton, "not interested")
-                  //notInterestedButton.click();
-              }
-          }, 300);
+              synthesizePointerTapAt(menuBtn, "menu");
+
+              setTimeout(() => {
+                  const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
+                  console.log("notInterestedButton:", notInterestedButton)
+                  if (notInterestedButton) {
+                      synthesizePointerTapAt(notInterestedButton, "not interested")
+                      //notInterestedButton.click();
+                  }
+              }, 300);
+          }, 1000);
       }, 1000);
 
     }

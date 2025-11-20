@@ -137,7 +137,7 @@ GM_addStyle(`
             synthesizePointerTapAt(notInterestedButton)
           //notInterestedButton.click();
         }
-      }, 300);
+      }, 3000);
     }
 
     // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る

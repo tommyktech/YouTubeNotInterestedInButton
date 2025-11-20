@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         YouTube Desktop/Mobile 両対応
+// @name         YouTube Desktop/Mobile 両対応 test
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
@@ -16,191 +16,161 @@ GM_addStyle(`
   }
 `);
 
-(function() {
-  'use strict';
+(function () {
+    'use strict';
 
-  console.log("init YouTube Desktop/Mobile 両対応")
-  var isMobile = false;
-  const host = window.location.hostname;
-  if (host == "m.youtube.com") {
-      isMobile = true;
-  }
+    var TILE_SELECTOR = 'ytd-rich-item-renderer';
+    var MENU_BUTTON_SELECTOR = 'button[aria-label="その他の操作"]';
+    var NOT_INTERESTED_BUTTON = 'yt-list-item-view-model.yt-list-item-view-model:nth-child(6)';
 
-  var TILE_SELECTOR = 'ytd-rich-item-renderer';
-  var MENU_BUTTON_SELECTOR = 'button[aria-label="その他の操作"]';
-  var NOT_INTERESTED_BUTTON = 'yt-list-item-view-model.yt-list-item-view-model:nth-child(6)';
-  var THUMBNAIL_VIEW = 'yt-thumbnail-view-model';
 
-  if (isMobile) {
-      TILE_SELECTOR = 'ytm-video-with-context-renderer';
-      MENU_BUTTON_SELECTOR = 'ytm-menu-renderer ytm-menu button';
-      NOT_INTERESTED_BUTTON = 'ytm-menu-service-item-renderer:nth-child(1) > ytm-menu-item > button';
-      THUMBNAIL_VIEW = 'ytm-thumbnail-cover';
-  }
+    const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
-  const PROCESSED_ATTR = 'data-yt-menu-opener-added';
+    function synthesizePointerTapAt(target, target_name) {
+        if (!target) return;
+        console.log("target_name:", target_name, "target:", target)
 
-  // === ここから追加部分：メニュー用の合成タップヘルパー ======================
-  /*
-  function synthesizePointerTapAtOld(target, target_name) {
-    if (!target) return;
+        target.style.backgroundColor = "red"
+        const r = target.getBoundingClientRect();
+        const cx = Math.round(r.left + r.width / 2);
+        const cy = Math.round(r.top + r.height / 2);
 
-    const r = target.getBoundingClientRect();
-    const cx = Math.round(r.left + r.width / 2);
-    const cy = Math.round(r.top + r.height / 2);
+        // ★ ここから改善：focus を与える
+        try {
+            target.focus({ preventScroll: true });
+        } catch(e) {}
 
-    const opts = {
-      bubbles: true,
-      cancelable: true,
-      composed: true,
-      clientX: cx,
-      clientY: cy,
-      screenX: cx,
-      screenY: cy,
-      pointerType: 'touch',
-      isPrimary: true
-    };
+        const opts = {
+            bubbles: true,
+            cancelable: true,
+            composed: true,
+            clientX: cx,
+            clientY: cy,
+            screenX: cx,
+            screenY: cy,
+            pointerType: 'touch',
+            isPrimary: true
+        };
 
-    try {
-      target.dispatchEvent(new PointerEvent('pointerdown', opts));
-      target.dispatchEvent(new PointerEvent('pointerup',   opts));
-    } catch (e) {
-      // PointerEvent 非対応環境では無視（後続の click に頼る）
-      console.log("failed to dispatch pointerdown or pointerup")
+        // ★ pointerdown → pointerup → mouseup → click の順序
+        target.dispatchEvent(new PointerEvent('pointerdown', opts));
+        target.dispatchEvent(new PointerEvent('pointerup', opts));
+        target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: cx, clientY: cy }));
+        target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: cx, clientY: cy }));
+        console.log(target_name + ' synthetic tap dispatched (improved)');
     }
 
-    target.dispatchEvent(new MouseEvent('click', {
-      bubbles: true,
-      cancelable: true,
-      clientX: cx,
-      clientY: cy
-    }));
+    function dispatchTapLike(target) {
+        if (!target) return;
+        try { target.focus({preventScroll:true}); } catch(e){}
 
-    console.log(target_name + ' synthetic tap dispatched');
-  }
-*/
-  function synthesizePointerTapAt(target, target_name) {
-    if (!target) return;
+        // 1) Polymer 等が直接リッスンしている可能性が高い 'tap' を先に投げる
+        try {
+            target.dispatchEvent(new CustomEvent('tap', { bubbles: true, cancelable: true, composed: true }));
+            console.log('dispatched CustomEvent tap');
+        } catch(e) { console.warn('tap custom event failed', e); }
 
-    const r = target.getBoundingClientRect();
-    const cx = Math.round(r.left + r.width / 2);
-    const cy = Math.round(r.top + r.height / 2);
-
-    // ★ ここから改善：focus を与える
-    try {
-        target.focus({ preventScroll: true });
-    } catch(e) {}
-
-    const opts = {
-        bubbles: true,
-        cancelable: true,
-        composed: true,
-        clientX: cx,
-        clientY: cy,
-        screenX: cx,
-        screenY: cy,
-        pointerType: 'touch',
-        isPrimary: true
-    };
-
-    // ★ pointerdown → pointerup → mouseup → click の順序
-    target.dispatchEvent(new PointerEvent('pointerdown', opts));
-    target.dispatchEvent(new PointerEvent('pointerup', opts));
-    target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: cx, clientY: cy }));
-    target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: cx, clientY: cy }));
-
-    console.log(target_name + ' synthetic tap dispatched (improved)');
-  }
-
-  // === ここまで追加部分 ====================================================
-
-  function attachButton(tile, idx) {
-    if (!tile) {
-        console.log("tile is null:", tile)
-        return;
-    }
-    if (tile.hasAttribute(PROCESSED_ATTR)) {
-        console.log("button already attached")
-        return;
-    }
-    tile.setAttribute(PROCESSED_ATTR, '1');
-
-    const btn = document.createElement('button');
-    btn.textContent = '🗑️';
-    btn.style.position = 'absolute';
-    btn.style.right = '0px';
-    btn.style.top = '40px';
-    btn.style.zIndex = 2000;
-    btn.style.fontSize = '24px';
-    btn.style.padding = '24px 24px 64px 24px';
-    btn.style.color = 'black';
-    btn.style.backgroundColor = 'transparent';
-    btn.style.borderColor = 'transparent';
-    btn.style.height = '64px';
-    btn.style.width = '64px';
-
-    tile.style.position = 'relative';
-      /*
-    const thumb = tile.querySelector(THUMBNAIL_VIEW);
-    if (!thumb) {
-      console.log('thumbnail not found');
-      return;
-    }
-    */
-    tile.appendChild(btn);
-    console.log("appended btn to tile")
-
-    // === ここからリスナーを変更 ============================================
-    // click ではなく pointerup / touchend で処理する
-    function onActivate(ev) {
-      console.log("###############################################################################################")
-
-      ev.preventDefault();
-      ev.stopPropagation();
-
-      const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
-      if (!menuBtn) {
-        console.log('menu button not found');
-        return;
-      }
-
-      // 合成 pointer + click をメニューに送る
-      synthesizePointerTapAt(menuBtn, "menu");
-
-      setTimeout(() => {
-        const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
-        console.log("notInterestedButton:", notInterestedButton)
-        if (notInterestedButton) {
-            synthesizePointerTapAt(notInterestedButton, "not interested")
-          //notInterestedButton.click();
+        // 2) pointer / mouse の一連を投げる（pointerType:'touch' を含む）
+        try {
+            const r = target.getBoundingClientRect();
+            const cx = Math.round(r.left + r.width/2);
+            const cy = Math.round(r.top + r.height/2);
+            const pOpts = {
+                bubbles: true, cancelable: true, composed: true,
+                clientX: cx, clientY: cy, screenX: cx, screenY: cy,
+                pointerId: Date.now() & 0xFFFF, pointerType: 'touch', isPrimary: true, pressure: 0.5, buttons: 1
+            };
+            target.dispatchEvent(new PointerEvent('pointerdown', pOpts));
+            target.dispatchEvent(new PointerEvent('pointerup', pOpts));
+            target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, clientX: cx, clientY: cy, buttons: 1 }));
+            target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: cx, clientY: cy, buttons: 1 }));
+            target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: cx, clientY: cy, buttons: 1 }));
+            console.log('dispatched pointer/mouse sequence');
+        } catch(e) {
+            console.warn('pointer/mouse sequence failed', e);
         }
-      }, 300);
+
+        // 3) TouchEvent を作れる場合は touchstart/touchend も投げる（ブラウザによっては生成不可）
+        try {
+            const r = target.getBoundingClientRect();
+            const cx = Math.round(r.left + r.width/2);
+            const cy = Math.round(r.top + r.height/2);
+            const touch = new Touch({ identifier: Date.now(), target: target, clientX: cx, clientY: cy, screenX: cx, screenY: cy, pageX: cx, pageY: cy });
+            const teStart = new TouchEvent('touchstart', { bubbles: true, cancelable: true, composed: true, touches: [touch], targetTouches: [touch], changedTouches: [touch] });
+            const teEnd   = new TouchEvent('touchend',   { bubbles: true, cancelable: true, composed: true, touches: [], targetTouches: [], changedTouches: [touch] });
+            target.dispatchEvent(teStart);
+            target.dispatchEvent(teEnd);
+            console.log('dispatched touchstart/touchend');
+        } catch(e) {
+            console.warn('TouchEvent creation failed or not allowed', e);
+        }
+
+        // 4) 最終フォールバックとして DOM click()
+        try {
+            target.click();
+            console.log('called element.click()');
+        } catch(e) {
+            console.warn('element.click() threw', e);
+        }
     }
 
-    // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る
-    btn.addEventListener('pointerup', function(ev) {       // ★ 追加
-      if (!ev.isPrimary) return;
-      onActivate(ev);
-    });
+    // === ここまで追加部分 ====================================================
 
-    btn.addEventListener('touchend', function(ev) {        // ★ 追加
-      onActivate(ev);
-    }, { passive: false });
+    function attachButton(tile, idx) {
+        if (!tile) {
+            console.log("tile is null:", tile)
+            return;
+        }
+        if (tile.hasAttribute(PROCESSED_ATTR)) {
+            console.log("button already attached")
+            return;
+        }
+        tile.setAttribute(PROCESSED_ATTR, '1');
 
-    // 念のため click もフォールバックとして残す（PC 用）
-    btn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
-      onActivate(ev);
-    });
-    // === ここまでリスナー変更 ==============================================
-  }
+        const btn = document.createElement('button');
+        btn.textContent = '🗑️';
+        btn.style.position = 'absolute';
+        btn.style.right = '0px';
+        btn.style.top = '40px';
+        btn.style.zIndex = 2000;
+        btn.style.fontSize = '24px';
+        btn.style.padding = '24px 24px 64px 24px';
+        btn.style.color = 'black';
+        btn.style.backgroundColor = 'transparent';
+        btn.style.borderColor = 'transparent';
+        btn.style.height = '64px';
+        btn.style.width = '64px';
 
-  function scanTiles() {
-    document.querySelectorAll(TILE_SELECTOR).forEach((tile, idx) => attachButton(tile, idx));
-  }
+        tile.style.position = 'relative';
+        tile.appendChild(btn);
+        console.log("appended btn to tile")
 
-  setTimeout(() => {
-    scanTiles();
+        // === ここからリスナーを変更 ============================================
+        function onActivate(ev) {
+
+            ev.preventDefault();
+            ev.stopPropagation();
+
+            const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
+            if (!menuBtn) {
+                console.log('menu button not found');
+                return;
+            }
+
+            // 合成 pointer + click をメニューに送る
+            //synthesizePointerTapAt(menuBtn, "menu");
+            dispatchTapLike(menuBtn)
+        }
+
+        // 念のため click もフォールバックとして残す（PC 用）
+        btn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
+            onActivate(ev);
+        });
+    }
+
+    function scanTiles() {
+        document.querySelectorAll(TILE_SELECTOR).forEach((tile, idx) => attachButton(tile, idx));
+    }
     new MutationObserver(scanTiles).observe(document.body, { childList: true, subtree: true });
-  }, 1000);
 
 })();

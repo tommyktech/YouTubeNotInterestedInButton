@@ -41,6 +41,7 @@ GM_addStyle(`
   const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
   // === ここから追加部分：メニュー用の合成タップヘルパー ======================
+  /*
   function synthesizePointerTapAtOld(target, target_name) {
     if (!target) return;
 
@@ -77,7 +78,7 @@ GM_addStyle(`
 
     console.log(target_name + ' synthetic tap dispatched');
   }
-
+*/
   function synthesizePointerTapAt(target, target_name) {
     if (!target) return;
 

@@ -41,7 +41,7 @@ GM_addStyle(`
   const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
   // === ここから追加部分：メニュー用の合成タップヘルパー ======================
-  function synthesizePointerTapAt(target) {
+  function synthesizePointerTapAt(target, target_name) {
     if (!target) return;
 
     const r = target.getBoundingClientRect();
@@ -75,7 +75,7 @@ GM_addStyle(`
       clientY: cy
     }));
 
-    console.log('menu synthetic tap dispatched');
+    console.log(target_name + ' synthetic tap dispatched');
   }
   // === ここまで追加部分 ====================================================
 
@@ -128,16 +128,16 @@ GM_addStyle(`
       }
 
       // 合成 pointer + click をメニューに送る
-      synthesizePointerTapAt(menuBtn);
+      synthesizePointerTapAt(menuBtn, "menu");
 
       setTimeout(() => {
         const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
         console.log("notInterestedButton:", notInterestedButton)
         if (notInterestedButton) {
-            synthesizePointerTapAt(notInterestedButton)
+            synthesizePointerTapAt(notInterestedButton, "not interested")
           //notInterestedButton.click();
         }
-      }, 3000);
+      }, 300);
     }
 
     // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る

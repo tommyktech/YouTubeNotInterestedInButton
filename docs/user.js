@@ -88,7 +88,6 @@ GM_addStyle(`
         console.log("button already attached")
         return;
     }
-    console.log("###############################################################################################")
     tile.setAttribute(PROCESSED_ATTR, '1');
 
     const btn = document.createElement('button');
@@ -119,6 +118,8 @@ GM_addStyle(`
     // === ここからリスナーを変更 ============================================
     // click ではなく pointerup / touchend で処理する
     function onActivate(ev) {
+      console.log("###############################################################################################")
+
       ev.preventDefault();
       ev.stopPropagation();
 

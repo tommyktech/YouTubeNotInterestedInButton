@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         YouTube Desktop/Mobile 両対応
-// @match        https://*.youtube.com/
+// @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
 // ==/UserScript==
@@ -25,30 +25,59 @@ GM_addStyle(`
       isMobile = true;
   }
 
-//  const TILE_SELECTOR = 'ytd-rich-item-renderer';
-  // const MENU_BUTTON_SELECTOR = 'button-view-model.ytSpecButtonViewModelHost';
-  // const MENU_BUTTON_SELECTOR = 'div.yt-spec-touch-feedback-shape__fill';
-
   var TILE_SELECTOR = 'ytd-rich-item-renderer';
-  //var MENU_BUTTON_SELECTOR = 'div.yt-spec-touch-feedback-shape__fill';
   var MENU_BUTTON_SELECTOR = 'button[aria-label="その他の操作"]';
-  var NOT_INTERESTED_BUTTON = 'yt-list-item-view-model.yt-list-item-view-model:nth-child(6)'
-  var THUMBNAIL_VIEW = 'yt-thumbnail-view-model'
+  var NOT_INTERESTED_BUTTON = 'yt-list-item-view-model.yt-list-item-view-model:nth-child(6)';
+  var THUMBNAIL_VIEW = 'yt-thumbnail-view-model';
 
   if (isMobile) {
-      //TILE_SELECTOR = 'ytm-rich-item-renderer';
       TILE_SELECTOR = 'ytm-video-with-context-renderer';
       MENU_BUTTON_SELECTOR = 'ytm-menu-renderer ytm-menu button';
-      NOT_INTERESTED_BUTTON = 'ytm-menu-service-item-renderer:nth-child(1) > ytm-menu-item > button'
-      THUMBNAIL_VIEW = 'ytm-thumbnail-cover'
+      NOT_INTERESTED_BUTTON = 'ytm-menu-service-item-renderer:nth-child(1) > ytm-menu-item > button';
+      THUMBNAIL_VIEW = 'ytm-thumbnail-cover';
   }
 
   const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
-  function attachButton(tile, idx) {
-    //console.log("tile:", tile)
-    //console.log("idx:", idx)
+  // === ここから追加部分：メニュー用の合成タップヘルパー ======================
+  function synthesizePointerTapAt(target) {
+    if (!target) return;
 
+    const r = target.getBoundingClientRect();
+    const cx = Math.round(r.left + r.width / 2);
+    const cy = Math.round(r.top + r.height / 2);
+
+    const opts = {
+      bubbles: true,
+      cancelable: true,
+      composed: true,
+      clientX: cx,
+      clientY: cy,
+      screenX: cx,
+      screenY: cy,
+      pointerType: 'touch',
+      isPrimary: true
+    };
+
+    try {
+      target.dispatchEvent(new PointerEvent('pointerdown', opts));
+      target.dispatchEvent(new PointerEvent('pointerup',   opts));
+    } catch (e) {
+      // PointerEvent 非対応環境では無視（後続の click に頼る）
+    }
+
+    target.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: cx,
+      clientY: cy
+    }));
+
+    console.log('menu synthetic tap dispatched');
+  }
+  // === ここまで追加部分 ====================================================
+
+  function attachButton(tile, idx) {
     if (!tile || tile.hasAttribute(PROCESSED_ATTR)) return;
     tile.setAttribute(PROCESSED_ATTR, '1');
 
@@ -60,46 +89,67 @@ GM_addStyle(`
     btn.style.zIndex = 2000;
     btn.style.fontSize = '24px';
     btn.style.padding = '24px 24px 64px 24px';
-    btn.style.color = "black";
-    btn.style.backgroundColor = "transparent";
+    btn.style.color = 'black';
+    btn.style.backgroundColor = 'transparent';
+    btn.style.borderColor = 'transparent';
+    btn.style.height = '64px';
+    btn.style.width = '64px';
 
-    btn.style.borderColor = "transparent";
-    btn.style.height = "64px";
-    btn.style.width = "64px";
+    tile.style.position = 'relative';
+    const thumb = tile.querySelector(THUMBNAIL_VIEW);
+    if (!thumb) {
+      console.log('thumbnail not found');
+      return;
+    }
+    thumb.appendChild(btn);
 
-
-    btn.addEventListener('click', (ev) => {
+    // === ここからリスナーを変更 ============================================
+    // click ではなく pointerup / touchend で処理する
+    function onActivate(ev) {
       ev.preventDefault();
       ev.stopPropagation();
 
-      //const menuBtn = tile.querySelector('button[aria-label="その他の操作"]');
       const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
-      if (!menuBtn) return console.log('menu button not found');
+      if (!menuBtn) {
+        console.log('menu button not found');
+        return;
+      }
 
-      menuBtn.click(); // ここでメニューを開く
-      console.log('menu button clicked');
+      // 合成 pointer + click をメニューに送る
+      synthesizePointerTapAt(menuBtn);
 
-        setTimeout(() => {
-            const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
-            if (notInterestedButton) {
-                notInterestedButton.click();
-            }
-        }, 100);
+      setTimeout(() => {
+        const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
+        if (notInterestedButton) {
+          notInterestedButton.click();
+        }
+      }, 100);
+    }
 
-
+    // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る
+    btn.addEventListener('pointerup', function(ev) {       // ★ 追加
+      if (!ev.isPrimary) return;
+      onActivate(ev);
     });
 
-    tile.style.position = 'relative';
-    tile.querySelector(THUMBNAIL_VIEW).appendChild(btn);
+    btn.addEventListener('touchend', function(ev) {        // ★ 追加
+      onActivate(ev);
+    }, { passive: false });
+
+    // 念のため click もフォールバックとして残す（PC 用）
+    btn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
+      onActivate(ev);
+    });
+    // === ここまでリスナー変更 ==============================================
   }
 
   function scanTiles() {
     document.querySelectorAll(TILE_SELECTOR).forEach((tile, idx) => attachButton(tile, idx));
   }
 
-    setTimeout(() => {
-        scanTiles();
-        new MutationObserver(scanTiles).observe(document.body, { childList: true, subtree: true });
-    }, 1000);
+  setTimeout(() => {
+    scanTiles();
+    new MutationObserver(scanTiles).observe(document.body, { childList: true, subtree: true });
+  }, 1000);
 
 })();

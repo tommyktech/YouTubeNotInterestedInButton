@@ -19,6 +19,7 @@ GM_addStyle(`
 (function() {
   'use strict';
 
+  console.log("init YouTube Desktop/Mobile 両対応")
   var isMobile = false;
   const host = window.location.hostname;
   if (host == "m.youtube.com") {
@@ -78,7 +79,10 @@ GM_addStyle(`
   // === ここまで追加部分 ====================================================
 
   function attachButton(tile, idx) {
-    if (!tile || tile.hasAttribute(PROCESSED_ATTR)) return;
+    if (!tile || tile.hasAttribute(PROCESSED_ATTR)) {
+        console.log("stop attaching button")
+        return;
+    }
     tile.setAttribute(PROCESSED_ATTR, '1');
 
     const btn = document.createElement('button');

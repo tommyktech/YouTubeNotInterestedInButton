@@ -129,16 +129,20 @@ GM_addStyle(`
 
       // 合成 pointer + click をメニューに送る
       synthesizePointerTapAt(menuBtn, "menu");
-      synthesizePointerTapAt(menuBtn, "menu");
 
       setTimeout(() => {
-        const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
-        console.log("notInterestedButton:", notInterestedButton)
-        if (notInterestedButton) {
-            synthesizePointerTapAt(notInterestedButton, "not interested")
-          //notInterestedButton.click();
-        }
-      }, 300);
+          synthesizePointerTapAt(menuBtn, "menu");
+
+          setTimeout(() => {
+              const notInterestedButton = document.querySelector(NOT_INTERESTED_BUTTON);
+              console.log("notInterestedButton:", notInterestedButton)
+              if (notInterestedButton) {
+                  synthesizePointerTapAt(notInterestedButton, "not interested")
+                  //notInterestedButton.click();
+              }
+          }, 300);
+      }, 1000);
+
     }
 
     // PC では click / mousedown だけでも足りるが、モバイルを優先して pointer/touch を見る

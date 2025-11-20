@@ -102,6 +102,7 @@ GM_addStyle(`
       return;
     }
     thumb.appendChild(btn);
+    console.log("append btn to thumb")
 
     // === ここからリスナーを変更 ============================================
     // click ではなく pointerup / touchend で処理する

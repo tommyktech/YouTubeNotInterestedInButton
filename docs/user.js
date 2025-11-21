@@ -289,7 +289,7 @@ GM_addStyle(`
                     dispatchTapLike(svg_el.parentElement.parentElement)
                     // さらに「理由を教えて下さい」をチェック
                     console.log("理由を教えて下さいボタン　が出てくるのを待つ")
-                    waitForElement("div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button", tile).then(send_reason_button => {
+                    waitForElement("div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button", tile, 200).then(send_reason_button => {
                         console.log("理由を教えて下さいボタンが見つかった:", send_reason_button)
                         console.log("理由を教えて下さいボタン をタップする")
                         dispatchTapLike(send_reason_button);

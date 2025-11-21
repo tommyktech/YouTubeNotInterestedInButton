@@ -170,10 +170,22 @@ GM_addStyle(`
         const tileRect = tile.getBoundingClientRect();
         // console.log(tile, tileRect.bottom);
         const durationBadge = tile.querySelector("yt-thumbnail-overlay-badge-view-model")
-        const minTopPos = durationBadge.offsetTop
+        // const minTopPos = durationBadge.offsetTop
+
 
         // const rect = durationBadge.getBoundingClientRect();
         // const minTopPos = rect.top;
+
+        function getTopRelativeToParent(el) {
+            const parent = el.parentElement
+            const elRect = el.getBoundingClientRect();
+            const parentRect = parent.getBoundingClientRect();
+
+            // 親のスクロール分を加算（scrollable container 対応）
+            return (elRect.top - parentRect.top) + parent.scrollTop;
+        }
+
+        const minTopPos = getTopRelativeToParent(durationBadge)
 
         if (!tile) {
             console.log("tile is null:", tile)

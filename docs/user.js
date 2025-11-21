@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.211
+// @version      0.22
 // ==/UserScript==
 
 GM_addStyle(`

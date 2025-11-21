@@ -21,6 +21,9 @@ GM_addStyle(`
 
     var TILE_SELECTOR = 'ytd-rich-item-renderer';
     var MENU_BUTTON_SELECTOR = 'button[aria-label="その他の操作"]';
+    var MENU_SELECTOR = 'tp-yt-iron-dropdown.ytd-popup-container';
+    var MENU_LIST_SELECTOR = 'yt-list-item-view-model.yt-list-item-view-model';
+
     var NOT_INTERESTED_BUTTON = 'yt-list-item-view-model.yt-list-item-view-model:nth-child(6)';
 
 
@@ -64,12 +67,12 @@ GM_addStyle(`
         if (!target) return;
         try { target.focus({preventScroll:true}); } catch(e){}
 
+        /*
         // 1) Polymer 等が直接リッスンしている可能性が高い 'tap' を先に投げる
         try {
             target.dispatchEvent(new CustomEvent('tap', { bubbles: true, cancelable: true, composed: true }));
             console.log('dispatched CustomEvent tap');
         } catch(e) { console.warn('tap custom event failed', e); }
-
         // 2) pointer / mouse の一連を投げる（pointerType:'touch' を含む）
         try {
             const r = target.getBoundingClientRect();
@@ -89,6 +92,7 @@ GM_addStyle(`
         } catch(e) {
             console.warn('pointer/mouse sequence failed', e);
         }
+        */
 
         // 3) TouchEvent を作れる場合は touchstart/touchend も投げる（ブラウザによっては生成不可）
         try {
@@ -147,22 +151,51 @@ GM_addStyle(`
 
         // === ここからリスナーを変更 ============================================
         function onActivate(ev) {
-
             ev.preventDefault();
             ev.stopPropagation();
-
             const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
             if (!menuBtn) {
                 console.log('menu button not found');
                 return;
             }
-
             // 合成 pointer + click をメニューに送る
             //synthesizePointerTapAt(menuBtn, "menu");
             dispatchTapLike(menuBtn)
-        }
 
-        // 念のため click もフォールバックとして残す（PC 用）
+            // メニューが現れるまで待つ
+            // TODO ytd-popup-container tp-yt-iron-dropdown yt-list-view-model が存在して、その中に要素が複数あって、位置が変化したら
+            function waitForElement(selector, intervalMs = 100, timeoutMs = 2000) {
+                return new Promise((resolve, reject) => {
+                    const start = Date.now();
+
+                    const timer = setInterval(() => {
+                        const elem = document.querySelector(selector);
+
+                        if (elem && elem.style.display != "none") {
+                            clearInterval(timer);
+                            resolve(elem);
+                            return;
+                        }
+
+                        if (Date.now() - start > timeoutMs) {
+                            clearInterval(timer);
+                            reject(new Error("タイムアウト: 要素が見つかりませんでした"));
+                        }
+                    }, intervalMs);
+                });
+            }
+
+            const svgPathData = "M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 2a9 9 0 018.246 12.605L4.755 6.661A8.99 8.99 0 0112 3ZM3.754 8.393l15.491 8.944A9 9 0 013.754 8.393Z";
+            const svgSelector = `path[d="${svgPathData}"]`
+            waitForElement("ytd-popup-container tp-yt-iron-dropdown").then(dropdown_el => {
+                console.log("dropdown_el:", dropdown_el)
+                waitForElement(svgSelector).then(svg_el => {
+                    console.log("svg_el:", svg_el)
+                    dispatchTapLike(svg_el.parentElement.parentElement)
+                });
+            });
+
+        }
         btn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
             onActivate(ev);
         });

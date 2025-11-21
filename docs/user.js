@@ -8,7 +8,7 @@
 GM_addStyle(`
   div.yt-lockup-metadata-view-model__menu-button button.yt-spec-button-shape-next {
     width: 60px !important;
-    height: 80px !important;
+    height: 44px !important;
   }
   ytm-menu-renderer ytm-menu button c3-icon {
     width: 50px !important;
@@ -39,13 +39,15 @@ GM_addStyle(`
 
   .read-btn {
     right: 0px;
-    top: 40px;
+    bottom: 0px;
+  //  top: 40px;
     z-index: 2000;
   }
 
   .not-interested-in-btn {
-    right: 0px;
-    top: 70px;
+    right: 50px;
+    bottom: 0px;
+//    top: 70px;
     z-index: 2000;
   }
 
@@ -169,24 +171,26 @@ GM_addStyle(`
     function attachButton(tile, idx) {
         const tileRect = tile.getBoundingClientRect();
         // console.log(tile, tileRect.bottom);
-        const durationBadge = tile.querySelector("yt-thumbnail-overlay-badge-view-model")
+
+        // const durationBadge = tile.querySelector("yt-thumbnail-overlay-badge-view-model");
+
         // const minTopPos = durationBadge.offsetTop
 
 
         // const rect = durationBadge.getBoundingClientRect();
         // const minTopPos = rect.top;
 
-        function getTopRelativeToParent(el) {
-            if (!el) return 0;
-            const parent = el.parentElement
-            const elRect = el.getBoundingClientRect();
-            const parentRect = parent.getBoundingClientRect();
+//         function getTopRelativeToParent(el) {
+//             if (!el) return 130; // 描画前だと取れないことがある
+//             const parent = el.parentElement
+//             const elRect = el.getBoundingClientRect();
+//             const parentRect = parent.getBoundingClientRect();
 
-            // 親のスクロール分を加算（scrollable container 対応）
-            return (elRect.top - parentRect.top) + parent.scrollTop;
-        }
+//             // 親のスクロール分を加算（scrollable container 対応）
+//             return (elRect.top - parentRect.top) + parent.scrollTop;
+//         }
 
-        const minTopPos = getTopRelativeToParent(durationBadge)
+//         const minTopPos = getTopRelativeToParent(durationBadge)
 
         if (!tile) {
             console.log("tile is null:", tile)
@@ -201,7 +205,10 @@ GM_addStyle(`
         // 既読ボタンを生成
         const readBtn = document.createElement('button');
         readBtn.className = 'additional-btn read-btn';
-        readBtn.style.top = minTopPos - 60 * 2 + 4 + "px"
+        // readBtn.style.top = minTopPos - 60 * 2 + 4 + "px"
+        // readBtn.style.bottom = "0px"
+        // readBtn.style.right = "0px"
+
 
         // チェックマーク用の span を作成
         const checkSpan = document.createElement('span');
@@ -214,7 +221,9 @@ GM_addStyle(`
         // つぎ not interested in button を設置
         const notInterestedBtn = document.createElement('button');
         notInterestedBtn.className = 'additional-btn not-interested-in-btn';
-        notInterestedBtn.style.top = (minTopPos - 60) + "px"
+        // notInterestedBtn.style.top = (minTopPos - 60) + "px"
+        // notInterestedBtn.style.bottom = "0px"
+        // notInterestedBtn.style.right = "40px"
 
         // チェックマーク用の span を作成
         const zzzSpan = document.createElement('span');

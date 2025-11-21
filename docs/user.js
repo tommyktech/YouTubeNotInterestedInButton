@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.2
+// @version      0.21
 // ==/UserScript==
 
 GM_addStyle(`
@@ -290,14 +290,14 @@ GM_addStyle(`
                     dispatchTapLike(svg_el.parentElement.parentElement)
                     // さらに「理由を教えて下さい」をチェック
                     console.log("理由を教えて下さいボタン　が出てくるのを待つ")
-                    waitForElement("div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button", tile, 200).then(send_reason_button => {
-                        console.log("理由を教えて下さいボタンが見つかった:", send_reason_button)
-                        console.log("理由を教えて下さいボタン をタップする")
+                    const TELL_ME_REASON_BUTTON = "div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button";
+                    waitForElement(TELL_ME_REASON_BUTTON, tile, 200).then(send_reason_button => {
+                        console.log("理由を教えて下さいボタンが見つかったのでタップする:", TELL_ME_REASON_BUTTON)
                         dispatchTapLike(send_reason_button);
 
                         console.log("見たことがある　のチェックボックスが出現するのを待つ")
                         waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
-                            console.log("checkbox_el をクリックする:", checkbox_el)
+                            console.log("checkbox をクリックする:", checkbox_el)
                             dispatchTapLike(checkbox_el);
 
                             console.log("送信ボタンを押す");

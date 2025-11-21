@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.3
+// @version      0.4
 // ==/UserScript==
 
 GM_addStyle(`
@@ -67,7 +67,7 @@ GM_addStyle(`
 
     const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
-    function showOverlay(msg, duration = 2000) {
+    function showOverlay(msg, duration = 3000) {
         let el = document.createElement("div");
         el.textContent = msg;
         Object.assign(el.style, {
@@ -78,7 +78,7 @@ GM_addStyle(`
             padding: "10px 16px",
             background: "rgba(255,255,255,0.5)",
             color: "black",
-            fontSize: "14px",
+            fontSize: "24px",
             zIndex: "99999",
             textAlign: "center"
         });
@@ -286,7 +286,7 @@ GM_addStyle(`
                     // さらに「理由を教えて下さい」をチェック
                     console.log("理由を教えて下さいボタン　が出てくるのを待つ")
                     const TELL_ME_REASON_BUTTON = "div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button";
-                    waitForElement(TELL_ME_REASON_BUTTON, tile, 200).then(send_reason_button => {
+                    waitForElement(TELL_ME_REASON_BUTTON, tile).then(send_reason_button => {
                         console.log("理由を教えて下さいボタンが見つかったのでタップする:", TELL_ME_REASON_BUTTON)
                         dispatchTapLike(send_reason_button);
 

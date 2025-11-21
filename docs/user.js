@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.21
+// @version      0.211
 // ==/UserScript==
 
 GM_addStyle(`
@@ -107,16 +107,11 @@ GM_addStyle(`
             }, intervalMs);
         });
     }
-    function sleepSync(ms) {
-        const end = Date.now() + ms;
-        while (Date.now() < end) { /* busy-wait; CPU を消費 */ }
-    }
     // タップっぽい動作を発行する
-    function dispatchTapLike(target, delay_ms = 1000) {
+    function dispatchTapLike(target, delay_ms = 0) {
         if (!target) return false;
         try {target.focus({preventScroll:true}); } catch(e){}
 
-        sleepSync(delay_ms)
 
         /*
         // 1) Polymer 等が直接リッスンしている可能性が高い 'tap' を先に投げる

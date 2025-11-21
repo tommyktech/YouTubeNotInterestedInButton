@@ -101,16 +101,21 @@ GM_addStyle(`
 
                 if (Date.now() - start > timeoutMs) {
                     clearInterval(timer);
-                    reject(new Error("タイムアウト: 要素が見つかりませんでした"));
+                    reject(new Error("タイムアウト: 要素が見つかりませんでした:" + selector));
                 }
             }, intervalMs);
         });
     }
-
+    function sleepSync(ms) {
+        const end = Date.now() + ms;
+        while (Date.now() < end) { /* busy-wait; CPU を消費 */ }
+    }
     // タップっぽい動作を発行する
-    function dispatchTapLike(target) {
+    function dispatchTapLike(target, delay_ms = 1000) {
         if (!target) return false;
         try {target.focus({preventScroll:true}); } catch(e){}
+
+        sleepSync(delay_ms)
 
         /*
         // 1) Polymer 等が直接リッスンしている可能性が高い 'tap' を先に投げる
@@ -277,33 +282,59 @@ GM_addStyle(`
             waitForElement(MENU_SELECTOR).then(dropdown_el => {
                 console.log("dropdown_el:", dropdown_el)
                 // 次にメニュー内にクリック対象が出てきたかをチェック
+                console.log("興味なし の項目が出るのを待つ")
                 waitForElement(SVG_SELECTOR, dropdown_el).then(svg_el => {
-                    console.log("svg_el:", svg_el)
+                    console.log("興味なし　項目が見つかった:", svg_el)
+                    console.log("興味なし をタップする")
                     dispatchTapLike(svg_el.parentElement.parentElement)
                     // さらに「理由を教えて下さい」をチェック
-                    waitForElement("div.ytNotificationMultiActionRendererButtonContainer", tile).then(reason_el => {
-                        console.log("reason_el:", reason_el)
-                        if (reason_el.children && reason_el.children.length == 2) {
-                            var reason_button = reason_el.children[1].children[0].children[0];
-                            console.log("reason_button:", reason_button)
-                            if (reason_button) {
-                                dispatchTapLike(reason_button);
+                    console.log("理由を教えて下さいボタン　が出てくるのを待つ")
+                    waitForElement("div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button", tile).then(send_reason_button => {
+                        console.log("理由を教えて下さいボタンが見つかった:", send_reason_button)
+                        console.log("理由を教えて下さいボタン をタップする")
+                        dispatchTapLike(send_reason_button);
 
-                                // 理由を聞かせろ　が表示されるまで待つ
-                                waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
-                                    console.log("checkbox_el:", checkbox_el)
-                                    dispatchTapLike(checkbox_el);
-                                    // 送信ボタンを押す
-                                    var submit_button = document.querySelector("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit")
-                                    const result = dispatchTapLike(submit_button);
-                                    if (result) {
-                                        showOverlay('Sent "Already Watched"');
-                                    }
-                                });
-                            }
-                        } else {
-                            console.log("reason button not found");
-                        }
+                        console.log("見たことがある　のチェックボックスが出現するのを待つ")
+                        waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
+                            console.log("checkbox_el をクリックする:", checkbox_el)
+                            dispatchTapLike(checkbox_el);
+
+                            console.log("送信ボタンを押す");
+                            waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit").then(submit_button => {
+                                const result = dispatchTapLike(submit_button);
+                                if (result) {
+                                    showOverlay('Sent "Already Watched"');
+                                } else {
+                                    showOverlay('Failed to send "Already Watched"');
+                                }
+                            });
+                        });
+
+
+
+//                         if (reason_el.children && reason_el.children.length == 2) {
+//                             var reason_button = reason_el.children[1].children[0].children[0];
+//                             console.log("reason_button:", reason_button)
+//                             if (reason_button) {
+//                                 dispatchTapLike(reason_button);
+
+//                                 // 理由を聞かせろ　が表示されるまで待つ
+//                                 waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
+//                                     console.log("checkbox_el をクリックする:", checkbox_el)
+//                                     dispatchTapLike(checkbox_el);
+//                                     // 送信ボタンを押す
+//                                     var submit_button = document.querySelector("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit")
+//                                     const result = dispatchTapLike(submit_button);
+//                                     if (result) {
+//                                         showOverlay('Sent "Already Watched"');
+//                                     }
+//                                 });
+//                             } else {
+
+//                             }
+                        // } else {
+                        //     console.log("理由ボタンが見つからなかった");
+                        // }
                     });
                 });
             });

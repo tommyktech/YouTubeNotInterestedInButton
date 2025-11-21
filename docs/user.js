@@ -177,6 +177,7 @@ GM_addStyle(`
         // const minTopPos = rect.top;
 
         function getTopRelativeToParent(el) {
+            if (!el) return 0;
             const parent = el.parentElement
             const elRect = el.getBoundingClientRect();
             const parentRect = parent.getBoundingClientRect();

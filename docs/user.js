@@ -170,10 +170,10 @@ GM_addStyle(`
         const tileRect = tile.getBoundingClientRect();
         // console.log(tile, tileRect.bottom);
         const durationBadge = tile.querySelector("yt-thumbnail-overlay-badge-view-model")
-        // const durationBadgeRect = durationBadge.getBoundingClientRect();
-        // const parentRect = durationBadge.parentElement.getBoundingClientRect();
-        // const minBottomPos = durationBadgeRect.bottom + durationBadgeRect.height;// - parentRect.top; // 親要素のtopからの距離
         const minTopPos = durationBadge.offsetTop
+
+        // const rect = durationBadge.getBoundingClientRect();
+        // const minTopPos = rect.top;
 
         if (!tile) {
             console.log("tile is null:", tile)
@@ -201,7 +201,7 @@ GM_addStyle(`
         // つぎ not interested in button を設置
         const notInterestedBtn = document.createElement('button');
         notInterestedBtn.className = 'additional-btn not-interested-in-btn';
-        notInterestedBtn.style.top = (durationBadge.offsetTop - 60) + "px"
+        notInterestedBtn.style.top = (minTopPos - 60) + "px"
 
         // チェックマーク用の span を作成
         const zzzSpan = document.createElement('span');

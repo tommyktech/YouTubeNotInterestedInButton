@@ -212,7 +212,7 @@ GM_addStyle(`
 
         // チェックマーク用の span を作成
         const checkSpan = document.createElement('span');
-        checkSpan.textContent = '✔';
+        checkSpan.textContent = '✔️';
         readBtn.appendChild(checkSpan);
 
         tile.style.position = 'relative';

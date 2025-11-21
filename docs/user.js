@@ -14,6 +14,41 @@ GM_addStyle(`
     width: 50px !important;
     height: 50px !important;
   }
+  .additional-btn {
+    position: absolute;
+    font-size: 28px;
+    padding: 2px;
+    margin-right: 4px;
+    border: none;
+    background: transparent;
+    height: 46px;
+    width: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .additional-btn span {
+    background: rgba(0,0,0,0.6);
+    padding: 0px;
+    height: 38px;
+    width: 38px;
+    border-radius: 4px;
+    color: white;
+  }
+
+  .read-btn {
+    right: 0px;
+    top: 40px;
+    z-index: 2000;
+  }
+
+  .not-interested-in-btn {
+    right: 0px;
+    top: 70px;
+    z-index: 2000;
+  }
+
 `);
 
 (function () {
@@ -21,51 +56,59 @@ GM_addStyle(`
 
     var TILE_SELECTOR = 'ytd-rich-item-renderer';
     var MENU_BUTTON_SELECTOR = 'button[aria-label="その他の操作"]';
-    var MENU_SELECTOR = 'tp-yt-iron-dropdown.ytd-popup-container';
-    var MENU_LIST_SELECTOR = 'yt-list-item-view-model.yt-list-item-view-model';
+    var MENU_SELECTOR = 'ytd-popup-container tp-yt-iron-dropdown';
+    var svgPathData = "M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 2a9 9 0 018.246 12.605L4.755 6.661A8.99 8.99 0 0112 3ZM3.754 8.393l15.491 8.944A9 9 0 013.754 8.393Z";
+    var SVG_SELECTOR = `path[d="${svgPathData}"]`
 
-    var NOT_INTERESTED_BUTTON = 'yt-list-item-view-model.yt-list-item-view-model:nth-child(6)';
 
 
     const PROCESSED_ATTR = 'data-yt-menu-opener-added';
 
-    function synthesizePointerTapAt(target, target_name) {
-        if (!target) return;
-        console.log("target_name:", target_name, "target:", target)
+    function showOverlay(msg, duration = 2000) {
+        let el = document.createElement("div");
+        el.textContent = msg;
+        Object.assign(el.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            padding: "10px 16px",
+            background: "rgba(255,255,255,0.5)",
+            color: "black",
+            fontSize: "14px",
+            zIndex: "99999",
+            textAlign: "center"
+        });
+        document.body.appendChild(el);
 
-        target.style.backgroundColor = "red"
-        const r = target.getBoundingClientRect();
-        const cx = Math.round(r.left + r.width / 2);
-        const cy = Math.round(r.top + r.height / 2);
-
-        // ★ ここから改善：focus を与える
-        try {
-            target.focus({ preventScroll: true });
-        } catch(e) {}
-
-        const opts = {
-            bubbles: true,
-            cancelable: true,
-            composed: true,
-            clientX: cx,
-            clientY: cy,
-            screenX: cx,
-            screenY: cy,
-            pointerType: 'touch',
-            isPrimary: true
-        };
-
-        // ★ pointerdown → pointerup → mouseup → click の順序
-        target.dispatchEvent(new PointerEvent('pointerdown', opts));
-        target.dispatchEvent(new PointerEvent('pointerup', opts));
-        target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, clientX: cx, clientY: cy }));
-        target.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: cx, clientY: cy }));
-        console.log(target_name + ' synthetic tap dispatched (improved)');
+        setTimeout(() => el.remove(), duration);
     }
 
+    // 要素が表示されるまで待つ
+    function waitForElement(selector, rootElem = null, intervalMs = 100, timeoutMs = 2000) {
+        return new Promise((resolve, reject) => {
+            const start = Date.now();
+
+            const timer = setInterval(() => {
+                const elem = (rootElem || document).querySelector(selector);
+                if (elem && elem.style.display != "none") {
+                    clearInterval(timer);
+                    resolve(elem);
+                    return;
+                }
+
+                if (Date.now() - start > timeoutMs) {
+                    clearInterval(timer);
+                    reject(new Error("タイムアウト: 要素が見つかりませんでした"));
+                }
+            }, intervalMs);
+        });
+    }
+
+    // タップっぽい動作を発行する
     function dispatchTapLike(target) {
-        if (!target) return;
-        try { target.focus({preventScroll:true}); } catch(e){}
+        if (!target) return false;
+        try {target.focus({preventScroll:true}); } catch(e){}
 
         /*
         // 1) Polymer 等が直接リッスンしている可能性が高い 'tap' を先に投げる
@@ -107,6 +150,7 @@ GM_addStyle(`
             console.log('dispatched touchstart/touchend');
         } catch(e) {
             console.warn('TouchEvent creation failed or not allowed', e);
+            return false;
         }
 
         // 4) 最終フォールバックとして DOM click()
@@ -115,12 +159,22 @@ GM_addStyle(`
             console.log('called element.click()');
         } catch(e) {
             console.warn('element.click() threw', e);
+            return false;
         }
+        return true;
     }
 
     // === ここまで追加部分 ====================================================
 
     function attachButton(tile, idx) {
+        const tileRect = tile.getBoundingClientRect();
+        // console.log(tile, tileRect.bottom);
+        const durationBadge = tile.querySelector("yt-thumbnail-overlay-badge-view-model")
+        // const durationBadgeRect = durationBadge.getBoundingClientRect();
+        // const parentRect = durationBadge.parentElement.getBoundingClientRect();
+        // const minBottomPos = durationBadgeRect.bottom + durationBadgeRect.height;// - parentRect.top; // 親要素のtopからの距離
+        const minTopPos = durationBadge.offsetTop
+
         if (!tile) {
             console.log("tile is null:", tile)
             return;
@@ -131,26 +185,34 @@ GM_addStyle(`
         }
         tile.setAttribute(PROCESSED_ATTR, '1');
 
-        const btn = document.createElement('button');
-        btn.textContent = '🗑️';
-        btn.style.position = 'absolute';
-        btn.style.right = '0px';
-        btn.style.top = '40px';
-        btn.style.zIndex = 2000;
-        btn.style.fontSize = '24px';
-        btn.style.padding = '24px 24px 64px 24px';
-        btn.style.color = 'black';
-        btn.style.backgroundColor = 'transparent';
-        btn.style.borderColor = 'transparent';
-        btn.style.height = '64px';
-        btn.style.width = '64px';
+        // 既読ボタンを生成
+        const readBtn = document.createElement('button');
+        readBtn.className = 'additional-btn read-btn';
+        readBtn.style.top = minTopPos - 60 * 2 + 4 + "px"
+
+        // チェックマーク用の span を作成
+        const checkSpan = document.createElement('span');
+        checkSpan.textContent = '✔';
+        readBtn.appendChild(checkSpan);
 
         tile.style.position = 'relative';
-        tile.appendChild(btn);
-        console.log("appended btn to tile")
+        tile.appendChild(readBtn);
 
-        // === ここからリスナーを変更 ============================================
-        function onActivate(ev) {
+        // つぎ not interested in button を設置
+        const notInterestedBtn = document.createElement('button');
+        notInterestedBtn.className = 'additional-btn not-interested-in-btn';
+        notInterestedBtn.style.top = (durationBadge.offsetTop - 60) + "px"
+
+        // チェックマーク用の span を作成
+        const zzzSpan = document.createElement('span');
+        zzzSpan.textContent = '💤';
+        notInterestedBtn.appendChild(zzzSpan);
+        tile.appendChild(notInterestedBtn);
+
+        console.log("appended btns to tile")
+
+        // 興味なしボタンの動作
+        function onNotInterestedInButtonClick(ev) {
             ev.preventDefault();
             ev.stopPropagation();
             const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
@@ -158,46 +220,80 @@ GM_addStyle(`
                 console.log('menu button not found');
                 return;
             }
-            // 合成 pointer + click をメニューに送る
-            //synthesizePointerTapAt(menuBtn, "menu");
+
+            // menu ボタンを押してメニューを表示させる
             dispatchTapLike(menuBtn)
 
-            // メニューが現れるまで待つ
-            // TODO ytd-popup-container tp-yt-iron-dropdown yt-list-view-model が存在して、その中に要素が複数あって、位置が変化したら
-            function waitForElement(selector, intervalMs = 100, timeoutMs = 2000) {
-                return new Promise((resolve, reject) => {
-                    const start = Date.now();
-
-                    const timer = setInterval(() => {
-                        const elem = document.querySelector(selector);
-
-                        if (elem && elem.style.display != "none") {
-                            clearInterval(timer);
-                            resolve(elem);
-                            return;
-                        }
-
-                        if (Date.now() - start > timeoutMs) {
-                            clearInterval(timer);
-                            reject(new Error("タイムアウト: 要素が見つかりませんでした"));
-                        }
-                    }, intervalMs);
+            // まずメニューが出てきたかをチェック
+            waitForElement(MENU_SELECTOR).then(dropdown_el => {
+                console.log("dropdown_el:", dropdown_el)
+                // 次にメニュー内にクリック対象が出てきたかをチェック
+                waitForElement(SVG_SELECTOR, dropdown_el).then(svg_el => {
+                    console.log("svg_el:", svg_el)
+                    const result = dispatchTapLike(svg_el.parentElement.parentElement)
+                    if (result) {
+                        showOverlay('Sent "Not Interested In"');
+                    }
                 });
+            });
+        };
+
+        // 既読ボタンの動作
+        function onReadButtonClick(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
+            if (!menuBtn) {
+                console.log('menu button not found');
+                return;
             }
 
-            const svgPathData = "M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 2a9 9 0 018.246 12.605L4.755 6.661A8.99 8.99 0 0112 3ZM3.754 8.393l15.491 8.944A9 9 0 013.754 8.393Z";
-            const svgSelector = `path[d="${svgPathData}"]`
-            waitForElement("ytd-popup-container tp-yt-iron-dropdown").then(dropdown_el => {
+            // menu ボタンを押してメニューを表示させる
+            dispatchTapLike(menuBtn)
+
+            // まずメニューが出てきたかをチェック
+            waitForElement(MENU_SELECTOR).then(dropdown_el => {
                 console.log("dropdown_el:", dropdown_el)
-                waitForElement(svgSelector).then(svg_el => {
+                // 次にメニュー内にクリック対象が出てきたかをチェック
+                waitForElement(SVG_SELECTOR, dropdown_el).then(svg_el => {
                     console.log("svg_el:", svg_el)
                     dispatchTapLike(svg_el.parentElement.parentElement)
+                    // さらに「理由を教えて下さい」をチェック
+                    waitForElement("div.ytNotificationMultiActionRendererButtonContainer", tile).then(reason_el => {
+                        console.log("reason_el:", reason_el)
+                        if (reason_el.children && reason_el.children.length == 2) {
+                            var reason_button = reason_el.children[1].children[0].children[0];
+                            console.log("reason_button:", reason_button)
+                            if (reason_button) {
+                                dispatchTapLike(reason_button);
+
+                                // 理由を聞かせろ　が表示されるまで待つ
+                                waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
+                                    console.log("checkbox_el:", checkbox_el)
+                                    dispatchTapLike(checkbox_el);
+                                    // 送信ボタンを押す
+                                    var submit_button = document.querySelector("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit")
+                                    const result = dispatchTapLike(submit_button);
+                                    if (result) {
+                                        showOverlay('Sent "Already Watched"');
+                                    }
+                                });
+                            }
+                        } else {
+                            console.log("reason button not found");
+                        }
+                    });
                 });
             });
 
         }
-        btn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
-            onActivate(ev);
+
+        // アクションをくっつける
+        readBtn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
+            onReadButtonClick(ev);
+        });
+        notInterestedBtn.addEventListener('click', function(ev) {           // ★ 変更（onActivate呼び出し）
+            onNotInterestedInButtonClick(ev);
         });
     }
 

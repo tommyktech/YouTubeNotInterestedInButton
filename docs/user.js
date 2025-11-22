@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.4
+// @version      0.5
 // ==/UserScript==
 
 GM_addStyle(`
@@ -107,8 +107,24 @@ GM_addStyle(`
             }, intervalMs);
         });
     }
+    function dispatchTapLike(element, delay_ms = 0) {
+        if (!element) return false;
+        try {element.focus({preventScroll:true}); } catch(e){}
+
+        // Pointer Event がある（ほぼすべての Android / PC）
+        const evt = new PointerEvent("pointerup", {
+            bubbles: true,
+            cancelable: true,
+            pointerType: "touch" // ここを "mouse" にしても可
+        });
+        element.dispatchEvent(evt);
+
+        // 最後に click を送る（安全）
+        element.click();
+    }
+
     // タップっぽい動作を発行する
-    function dispatchTapLike(target, delay_ms = 0) {
+    function dispatchTapLike_old(target, delay_ms = 0) {
         if (!target) return false;
         try {target.focus({preventScroll:true}); } catch(e){}
 
@@ -272,69 +288,49 @@ GM_addStyle(`
             }
 
             // menu ボタンを押してメニューを表示させる
-            dispatchTapLike(menuBtn)
+            dispatchTapLike(menuBtn);
 
-            // まずメニューが出てきたかをチェック
-            waitForElement(MENU_SELECTOR).then(dropdown_el => {
-                console.log("dropdown_el:", dropdown_el)
-                // 次にメニュー内にクリック対象が出てきたかをチェック
-                console.log("興味なし の項目が出るのを待つ")
-                waitForElement(SVG_SELECTOR, dropdown_el).then(svg_el => {
-                    console.log("興味なし　項目が見つかった:", svg_el)
-                    console.log("興味なし をタップする")
-                    dispatchTapLike(svg_el.parentElement.parentElement)
-                    // さらに「理由を教えて下さい」をチェック
-                    console.log("理由を教えて下さいボタン　が出てくるのを待つ")
+            (async () => {
+                try {
+                    // メニューが出てくるのを待つ
+                    const dropdown_el = await waitForElement(MENU_SELECTOR);
+                    console.log("dropdown_el:", dropdown_el);
+
+                    // メニュー内にクリック対象が出てくるのを待つ
+                    console.log("興味なし の項目が出るのを待つ");
+                    const svg_el = await waitForElement(SVG_SELECTOR, dropdown_el);
+                    console.log("興味なし 項目が見つかった:", svg_el);
+
+                    console.log("興味なし をタップする");
+                    dispatchTapLike(svg_el.parentElement.parentElement);
+
+                    // 「理由を教えて下さい」ボタンを待つ
+                    console.log("理由を教えて下さいボタンが出てくるのを待つ");
                     const TELL_ME_REASON_BUTTON = "div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button";
-                    waitForElement(TELL_ME_REASON_BUTTON, tile).then(send_reason_button => {
-                        console.log("理由を教えて下さいボタンが見つかったのでタップする:", TELL_ME_REASON_BUTTON)
-                        dispatchTapLike(send_reason_button);
+                    const send_reason_button = await waitForElement(TELL_ME_REASON_BUTTON, tile);
+                    console.log("理由を教えて下さいボタンが見つかった:", TELL_ME_REASON_BUTTON);
+                    dispatchTapLike(send_reason_button);
 
-                        console.log("見たことがある　のチェックボックスが出現するのを待つ")
-                        waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
-                            console.log("checkbox をクリックする:", checkbox_el)
-                            dispatchTapLike(checkbox_el);
+                    // 「見たことがある」チェックボックスを待つ
+                    console.log("見たことがある のチェックボックスが出るのを待つ");
+                    const checkbox_el = await waitForElement(
+                        "tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)"
+                    );
+                    console.log("checkbox をクリックする:", checkbox_el);
+                    dispatchTapLike(checkbox_el);
 
-                            console.log("送信ボタンを押す");
-                            waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit").then(submit_button => {
-                                const result = dispatchTapLike(submit_button);
-                                if (result) {
-                                    showOverlay('Sent "Already Watched"');
-                                } else {
-                                    showOverlay('Failed to send "Already Watched"');
-                                }
-                            });
-                        });
+                    // 送信ボタンを押す
+                    console.log("送信ボタンを押す");
+                    const submit_button = await waitForElement(
+                        "tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit"
+                    );
+                    const result = dispatchTapLike(submit_button);
+                    showOverlay(result ? 'Sent "Already Watched"' : 'Failed to send "Already Watched"');
 
-
-
-//                         if (reason_el.children && reason_el.children.length == 2) {
-//                             var reason_button = reason_el.children[1].children[0].children[0];
-//                             console.log("reason_button:", reason_button)
-//                             if (reason_button) {
-//                                 dispatchTapLike(reason_button);
-
-//                                 // 理由を聞かせろ　が表示されるまで待つ
-//                                 waitForElement("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)").then(checkbox_el => {
-//                                     console.log("checkbox_el をクリックする:", checkbox_el)
-//                                     dispatchTapLike(checkbox_el);
-//                                     // 送信ボタンを押す
-//                                     var submit_button = document.querySelector("tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit")
-//                                     const result = dispatchTapLike(submit_button);
-//                                     if (result) {
-//                                         showOverlay('Sent "Already Watched"');
-//                                     }
-//                                 });
-//                             } else {
-
-//                             }
-                        // } else {
-                        //     console.log("理由ボタンが見つからなかった");
-                        // }
-                    });
-                });
-            });
-
+                } catch (err) {
+                    console.error("処理中にエラーが発生:", err);
+                }
+            })();
         }
 
         // アクションをくっつける

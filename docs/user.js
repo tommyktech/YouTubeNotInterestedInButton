@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.5
+// @version      0.51
 // ==/UserScript==
 
 GM_addStyle(`
@@ -107,24 +107,8 @@ GM_addStyle(`
             }, intervalMs);
         });
     }
-    function dispatchTapLike(element, delay_ms = 0) {
-        if (!element) return false;
-        try {element.focus({preventScroll:true}); } catch(e){}
-
-        // Pointer Event がある（ほぼすべての Android / PC）
-        const evt = new PointerEvent("pointerup", {
-            bubbles: true,
-            cancelable: true,
-            pointerType: "touch" // ここを "mouse" にしても可
-        });
-        element.dispatchEvent(evt);
-
-        // 最後に click を送る（安全）
-        element.click();
-    }
-
     // タップっぽい動作を発行する
-    function dispatchTapLike_old(target, delay_ms = 0) {
+    function dispatchTapLike(target, delay_ms = 0) {
         if (!target) return false;
         try {target.focus({preventScroll:true}); } catch(e){}
 
@@ -169,7 +153,6 @@ GM_addStyle(`
             console.log('dispatched touchstart/touchend');
         } catch(e) {
             console.warn('TouchEvent creation failed or not allowed', e);
-            return false;
         }
 
         // 4) 最終フォールバックとして DOM click()

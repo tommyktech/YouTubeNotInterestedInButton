@@ -3,7 +3,7 @@
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.51
+// @version      0.52
 // ==/UserScript==
 
 GM_addStyle(`
@@ -150,7 +150,7 @@ GM_addStyle(`
             const teEnd   = new TouchEvent('touchend',   { bubbles: true, cancelable: true, composed: true, touches: [], targetTouches: [], changedTouches: [touch] });
             target.dispatchEvent(teStart);
             target.dispatchEvent(teEnd);
-            console.log('dispatched touchstart/touchend');
+            console.debug('dispatched touchstart/touchend');
         } catch(e) {
             console.warn('TouchEvent creation failed or not allowed', e);
         }
@@ -158,7 +158,7 @@ GM_addStyle(`
         // 4) 最終フォールバックとして DOM click()
         try {
             target.click();
-            console.log('called element.click()');
+            console.debug('called element.click()');
         } catch(e) {
             console.warn('element.click() threw', e);
             return false;
@@ -193,11 +193,11 @@ GM_addStyle(`
 //         const minTopPos = getTopRelativeToParent(durationBadge)
 
         if (!tile) {
-            console.log("tile is null:", tile)
+            console.debug("tile is null:", tile)
             return;
         }
         if (tile.hasAttribute(PROCESSED_ATTR)) {
-            console.log("button already attached")
+            // console.debug("button already attached")
             return;
         }
         tile.setAttribute(PROCESSED_ATTR, '1');
@@ -231,7 +231,7 @@ GM_addStyle(`
         notInterestedBtn.appendChild(zzzSpan);
         tile.appendChild(notInterestedBtn);
 
-        console.log("appended btns to tile")
+        console.debug("appended btns to tile")
 
         // 興味なしボタンの動作
         function onNotInterestedInButtonClick(ev) {
@@ -239,7 +239,7 @@ GM_addStyle(`
             ev.stopPropagation();
             const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
             if (!menuBtn) {
-                console.log('menu button not found');
+                console.warn('menu button not found');
                 return;
             }
 
@@ -248,10 +248,10 @@ GM_addStyle(`
 
             // まずメニューが出てきたかをチェック
             waitForElement(MENU_SELECTOR).then(dropdown_el => {
-                console.log("dropdown_el:", dropdown_el)
+                console.debug("dropdown_el:", dropdown_el)
                 // 次にメニュー内にクリック対象が出てきたかをチェック
                 waitForElement(SVG_SELECTOR, dropdown_el).then(svg_el => {
-                    console.log("svg_el:", svg_el)
+                    console.debug("svg_el:", svg_el)
                     const result = dispatchTapLike(svg_el.parentElement.parentElement)
                     if (result) {
                         showOverlay('Sent "Not Interested In"');
@@ -266,7 +266,7 @@ GM_addStyle(`
             ev.stopPropagation();
             const menuBtn = tile.querySelector(MENU_BUTTON_SELECTOR);
             if (!menuBtn) {
-                console.log('menu button not found');
+                console.warn('menu button not found');
                 return;
             }
 
@@ -277,33 +277,33 @@ GM_addStyle(`
                 try {
                     // メニューが出てくるのを待つ
                     const dropdown_el = await waitForElement(MENU_SELECTOR);
-                    console.log("dropdown_el:", dropdown_el);
+                    console.debug("dropdown_el:", dropdown_el);
 
                     // メニュー内にクリック対象が出てくるのを待つ
-                    console.log("興味なし の項目が出るのを待つ");
+                    console.debug("興味なし の項目が出るのを待つ");
                     const svg_el = await waitForElement(SVG_SELECTOR, dropdown_el);
-                    console.log("興味なし 項目が見つかった:", svg_el);
+                    console.debug("興味なし 項目が見つかった:", svg_el);
 
-                    console.log("興味なし をタップする");
+                    console.debug("興味なし をタップする");
                     dispatchTapLike(svg_el.parentElement.parentElement);
 
                     // 「理由を教えて下さい」ボタンを待つ
-                    console.log("理由を教えて下さいボタンが出てくるのを待つ");
+                    console.debug("理由を教えて下さいボタンが出てくるのを待つ");
                     const TELL_ME_REASON_BUTTON = "div.ytNotificationMultiActionRendererButtonContainer div:nth-child(2) button-view-model button";
                     const send_reason_button = await waitForElement(TELL_ME_REASON_BUTTON, tile);
-                    console.log("理由を教えて下さいボタンが見つかった:", TELL_ME_REASON_BUTTON);
+                    console.debug("理由を教えて下さいボタンが見つかった:", TELL_ME_REASON_BUTTON);
                     dispatchTapLike(send_reason_button);
 
                     // 「見たことがある」チェックボックスを待つ
-                    console.log("見たことがある のチェックボックスが出るのを待つ");
+                    console.debug("見たことがある のチェックボックスが出るのを待つ");
                     const checkbox_el = await waitForElement(
                         "tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#content div#reasons ytd-dismissal-reason-text-renderer:nth-child(1) tp-yt-paper-checkbox:nth-child(1)"
                     );
-                    console.log("checkbox をクリックする:", checkbox_el);
+                    console.debug("checkbox をクリックする:", checkbox_el);
                     dispatchTapLike(checkbox_el);
 
                     // 送信ボタンを押す
-                    console.log("送信ボタンを押す");
+                    console.debug("送信ボタンを押す");
                     const submit_button = await waitForElement(
                         "tp-yt-paper-dialog ytd-dismissal-follow-up-renderer div#buttons ytd-button-renderer#submit"
                     );

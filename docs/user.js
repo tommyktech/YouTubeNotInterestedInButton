@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         YouTube Desktop/Mobile 両対応 test
+// @name         YouTube Not Interested In One Button
 // @match        https://*.youtube.com/*
 // @grant        GM_addStyle
 // @run-at       document-idle
-// @version      0.52
+// @version      0.53
 // ==/UserScript==
 
 GM_addStyle(`
@@ -30,12 +30,24 @@ GM_addStyle(`
   }
 
   .additional-btn span {
-    background: rgba(0,0,0,0.6);
+    //background: rgba(0,0,0,0.6);
     padding: 0px;
-    height: 38px;
-    width: 38px;
-    border-radius: 4px;
+    height: 34px;
+    width: 34px;
+    font-size: 30;
+    // border-radius: 4px;
     color: white;
+  }
+
+  .additional-btn svg {
+    //background: rgba(0,0,0,0.6);
+    padding: 0px;
+    height: 28px;
+    width: 28px;
+    //border-radius: 4px;
+    stroke: white;
+    fill: white;
+    stroke-width:0.5px;
   }
 
   .read-btn {
@@ -46,7 +58,7 @@ GM_addStyle(`
   }
 
   .not-interested-in-btn {
-    right: 50px;
+    right: 40px;
     bottom: 0px;
 //    top: 70px;
     z-index: 2000;
@@ -57,12 +69,11 @@ GM_addStyle(`
 (function () {
     'use strict';
 
-    var TILE_SELECTOR = 'ytd-rich-item-renderer';
+    var TILE_SELECTOR = 'yt-lockup-view-model';
     var MENU_BUTTON_SELECTOR = 'button[aria-label="その他の操作"]';
     var MENU_SELECTOR = 'ytd-popup-container tp-yt-iron-dropdown';
     var svgPathData = "M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 2a9 9 0 018.246 12.605L4.755 6.661A8.99 8.99 0 0112 3ZM3.754 8.393l15.491 8.944A9 9 0 013.754 8.393Z";
     var SVG_SELECTOR = `path[d="${svgPathData}"]`
-
 
 
     const PROCESSED_ATTR = 'data-yt-menu-opener-added';
@@ -201,21 +212,16 @@ GM_addStyle(`
             return;
         }
         tile.setAttribute(PROCESSED_ATTR, '1');
+        tile.style.position = 'relative';
 
         // 既読ボタンを生成
         const readBtn = document.createElement('button');
         readBtn.className = 'additional-btn read-btn';
-        // readBtn.style.top = minTopPos - 60 * 2 + 4 + "px"
-        // readBtn.style.bottom = "0px"
-        // readBtn.style.right = "0px"
-
 
         // チェックマーク用の span を作成
         const checkSpan = document.createElement('span');
-        checkSpan.textContent = '✔️';
+        checkSpan.textContent = "✔";
         readBtn.appendChild(checkSpan);
-
-        tile.style.position = 'relative';
         tile.appendChild(readBtn);
 
         // つぎ not interested in button を設置
@@ -226,9 +232,24 @@ GM_addStyle(`
         // notInterestedBtn.style.right = "40px"
 
         // チェックマーク用の span を作成
-        const zzzSpan = document.createElement('span');
-        zzzSpan.textContent = '💤';
-        notInterestedBtn.appendChild(zzzSpan);
+        // const zzzSpan = document.createElement('span');
+        // zzzSpan.textContent = '💤';
+        // notInterestedBtn.appendChild(zzzSpan);
+
+
+        // <svg> を作成
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("width", "24");
+        svg.setAttribute("height", "24");
+        svg.setAttribute("viewBox", "0 0 24 24");
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", "M12 1C5.925 1 1 5.925 1 12s4.925 11 11 11 11-4.925 11-11S18.075 1 12 1Zm0 2a9 9 0 018.246 12.605L4.755 6.661A8.99 8.99 0 0112 3ZM3.754 8.393l15.491 8.944A9 9 0 013.754 8.393Z");
+        svg.appendChild(path);
+        notInterestedBtn.appendChild(svg);
+
+
+
         tile.appendChild(notInterestedBtn);
 
         console.debug("appended btns to tile")
